@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ASPNETIdentityCourse.Controllers;
 
-public class AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+public class AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
     : Controller
 {
     public IActionResult Register()
