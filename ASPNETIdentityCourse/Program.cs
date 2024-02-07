@@ -1,4 +1,5 @@
 using ASPNETIdentityCourse;
+using ASPNETIdentityCourse.Mappings;
 using ASPNETIdentityCourse.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,11 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>
 {
     opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<AccountMappingProfile>();
 });
 
 // Can be IdentityUser instead ApplicationUser
