@@ -27,7 +27,7 @@
 //     {
 //         var mailMessage = new MailMessage
 //         {
-//             From = new MailAddress("kamilpietrak123@gmail.com"),
+//             From = new MailAddress(""),
 //             Subject = subject,
 //             Body = htmlMessage,
 //             IsBodyHtml = true,
