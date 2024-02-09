@@ -17,6 +17,7 @@ public class AccountController(
 
     #region Register
 
+    [HttpGet]
     public IActionResult Register(string returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
@@ -53,8 +54,7 @@ public class AccountController(
             protocol: HttpContext.Request.Scheme);
         
         // There should be send email with email confirmation url
-        Console.WriteLine();
-        
+        Console.WriteLine(callbackUrl);
         
         await signInManager.SignInAsync(user, isPersistent: false);
         return LocalRedirect(returnUrl);
@@ -64,6 +64,7 @@ public class AccountController(
 
     #region Login
         
+    [HttpGet]
     public IActionResult Login(string returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
@@ -94,21 +95,9 @@ public class AccountController(
 
     #endregion
     
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> LogOff()
-    {
-        await signInManager.SignOutAsync();
-        return RedirectToAction("Index", "Home");
-    }
-
-    public IActionResult Lockout()
-    {
-        return View();
-    }
-
     #region ForgotPassword 
     
+    [HttpGet]
     public IActionResult ForgotPassword()
     {
         var forgotPasswordViewModel = new ForgotPasswordViewModel();
@@ -119,40 +108,38 @@ public class AccountController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel forgotPasswordViewModel)
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid) return View(forgotPasswordViewModel);
+        var user = await userManager.FindByEmailAsync(forgotPasswordViewModel.Email);
+        if (user is null)
         {
-            var user = await userManager.FindByEmailAsync(forgotPasswordViewModel.Email);
-            if (user is null)
-            {
-                return RedirectToAction("ForgotPasswordConfirmation");
-            }
-
-            var code = await userManager.GeneratePasswordResetTokenAsync(user);
-            var callbackUrl = Url.Action(
-                "ResetPassword", 
-                "Account", 
-                new
-                {
-                    userId = user.Id, 
-                    code = code
-                },
-                protocol: HttpContext.Request.Scheme);
-
-            Console.Write(callbackUrl);
-            // await emailSender.SendEmailAsync(forgotPasswordViewModel.Email, "Reset password", $"url");
-            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            return RedirectToAction("ForgotPasswordConfirmation");
         }
 
-        return View(forgotPasswordViewModel);
+        var code = await userManager.GeneratePasswordResetTokenAsync(user);
+        var callbackUrl = Url.Action(
+            "ResetPassword", 
+            "Account", 
+            new
+            {
+                userId = user.Id, 
+                code = code
+            },
+            protocol: HttpContext.Request.Scheme);
+
+        Console.Write(callbackUrl);
+        // await emailSender.SendEmailAsync(forgotPasswordViewModel.Email, "Reset password", $"url");
+        return RedirectToAction(nameof(ForgotPasswordConfirmation));
     }
-    
-    #endregion
     
     [HttpGet]
     public IActionResult ForgotPasswordConfirmation()
     {
         return View();
     }
+    
+    #endregion
+
+    #region ResetPassword
 
     [HttpGet]
     public IActionResult ResetPassword(string code = null)
@@ -168,22 +155,20 @@ public class AccountController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid) return View();
+        var user = await userManager.FindByEmailAsync(resetPasswordViewModel.Email);
+        if (user is null)
         {
-            var user = await userManager.FindByEmailAsync(resetPasswordViewModel.Email);
-            if (user is null)
-            {
-                return RedirectToAction(nameof(ResetPasswordConfirmation));
-            }
-
-            var result = await userManager.ResetPasswordAsync(user, resetPasswordViewModel.Code, resetPasswordViewModel.Password);
-            if (result.Succeeded)
-            {
-                return RedirectToAction(nameof(ResetPasswordConfirmation));
-            }
-            AddErrors(result);
+            return RedirectToAction(nameof(ResetPasswordConfirmation));
         }
-        
+
+        var result = await userManager.ResetPasswordAsync(user, resetPasswordViewModel.Code, resetPasswordViewModel.Password);
+        if (result.Succeeded)
+        {
+            return RedirectToAction(nameof(ResetPasswordConfirmation));
+        }
+        AddErrors(result);
+
         return View();
     }
     
@@ -192,22 +177,37 @@ public class AccountController(
     {
         return View();
     }
+    
+    #endregion
 
+    
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LogOff()
+    {
+        await signInManager.SignOutAsync();
+        return RedirectToAction("Index", "Home");
+    }
+
+    [HttpGet]
+    public IActionResult Lockout()
+    {
+        return View();
+    }
+    
+    [HttpGet]
     public async Task<IActionResult> ConfirmEmail(string userId, string code)
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid) return View("Error");
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null)
         {
-            var user = await userManager.FindByIdAsync(userId);
-            if (user is null)
-            {
-                return View("Error");
-            }
-
-            var result = await userManager.ConfirmEmailAsync(user, code);
-            return result.Succeeded ? View() : View("Error");
+            return View("Error");
         }
 
-        return View("Error");
+        var result = await userManager.ConfirmEmailAsync(user, code);
+        return result.Succeeded ? View() : View("Error");
+
     }
     
     private void AddErrors(IdentityResult identityResult)
