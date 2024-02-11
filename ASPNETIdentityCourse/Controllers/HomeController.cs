@@ -1,21 +1,31 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using ASPNETIdentityCourse.Models;
+using ASPNETIdentityCourse.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace ASPNETIdentityCourse.Controllers;
 
-public class HomeController : Controller
+public class HomeController(ILogger<HomeController> logger, UserManager<ApplicationUser> userManager)
+    : Controller
 {
-    private readonly ILogger<HomeController> _logger;
+    private readonly ILogger<HomeController> _logger = logger;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-    public HomeController(ILogger<HomeController> logger)
+    public async Task<IActionResult> Index()
     {
-        _logger = logger;
-    }
+        var user = await _userManager.GetUserAsync(User);
 
-    public IActionResult Index()
-    {
+        if (user is null)
+        {
+            ViewData["TwoFactorEnabled"] = false;
+        }
+        else
+        {
+            ViewData["TwoFactorEnabled"] = user.TwoFactorEnabled;
+        }
+
         return View();
     }
 
