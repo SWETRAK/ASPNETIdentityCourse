@@ -1,4 +1,5 @@
 using System.Text.Encodings.Web;
+using ASPNETIdentityCourse.Const;
 using ASPNETIdentityCourse.Models.Entities;
 using ASPNETIdentityCourse.Models.ViewModels;
 using AutoMapper;
@@ -6,11 +7,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace ASPNETIdentityCourse.Controllers;
 
+[Authorize]
 public class AccountController(
     UserManager<ApplicationUser> userManager,
+    RoleManager<IdentityRole> roleManager,
     SignInManager<ApplicationUser> signInManager,
     UrlEncoder urlEncoder,
     // IEmailSender emailSender,
@@ -21,19 +26,34 @@ public class AccountController(
     #region Register
 
     [HttpGet]
-    public IActionResult Register(string returnUrl = null)
+    [AllowAnonymous]
+    public async Task<IActionResult> Register(string returnUrl = null)
     {
+        if (!await roleManager.RoleExistsAsync(Role.Administrator))
+        {
+            await roleManager.CreateAsync(new IdentityRole(Role.Administrator));
+            await roleManager.CreateAsync(new IdentityRole(Role.User));
+        }
+        
+        var roleList = await roleManager.Roles.Select(role => new SelectListItem(role.Name, role.Name)).ToListAsync();
+
         ViewData["ReturnUrl"] = returnUrl;
-        var registerViewModel = new RegisterViewModel();
+        var registerViewModel = new RegisterViewModel
+        {
+            RoleList = roleList,
+        };
         return View(registerViewModel);
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel registerViewModel, string returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
         returnUrl ??= Url.Content("/");
+        var roleList = await roleManager.Roles.Select(role => new SelectListItem(role.Name, role.Name)).ToListAsync();
+        registerViewModel.RoleList = roleList;
         if (!ModelState.IsValid) return View(registerViewModel);
 
         var user = mapper.Map<ApplicationUser>(registerViewModel);
@@ -43,6 +63,15 @@ public class AccountController(
         {
             AddErrors(result);
             return View(registerViewModel);
+        }
+
+        if (!string.IsNullOrEmpty(registerViewModel.SelectedRole) && registerViewModel.SelectedRole.Equals(Role.Administrator))
+        {
+            await userManager.AddToRoleAsync(user, registerViewModel.SelectedRole);
+        }
+        else
+        {
+            await userManager.AddToRoleAsync(user, Role.User);
         }
 
         var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -68,6 +97,7 @@ public class AccountController(
     #region Login
         
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult Login(string returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
@@ -76,6 +106,7 @@ public class AccountController(
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel loginViewModel, string returnUrl = null)
     {
@@ -102,6 +133,7 @@ public class AccountController(
     #region ForgotPassword 
     
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult ForgotPassword()
     {
         var forgotPasswordViewModel = new ForgotPasswordViewModel();
@@ -109,6 +141,7 @@ public class AccountController(
     }
     
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel forgotPasswordViewModel)
     {
@@ -137,6 +170,7 @@ public class AccountController(
     }
     
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult ForgotPasswordConfirmation()
     {
         return View();
@@ -147,6 +181,7 @@ public class AccountController(
     #region ResetPassword
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult ResetPassword(string code = null)
     {
         var resetPasswordViewModel = new ResetPasswordViewModel()
@@ -157,6 +192,7 @@ public class AccountController(
     }
     
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
     {
@@ -178,6 +214,7 @@ public class AccountController(
     }
     
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult ResetPasswordConfirmation()
     {
         return View();
@@ -194,12 +231,14 @@ public class AccountController(
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult Lockout()
     {
         return View();
     }
     
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> ConfirmEmail(string userId, string code)
     {
         if (!ModelState.IsValid) return View("Error");
@@ -211,7 +250,12 @@ public class AccountController(
 
         var result = await userManager.ConfirmEmailAsync(user, code);
         return result.Succeeded ? View() : View("Error");
+    }
 
+    [HttpGet]
+    public IActionResult NoAccess()
+    {
+        return View();
     }
 
     #region TwoFactorAuthentication
@@ -244,7 +288,6 @@ public class AccountController(
     }
 
     [HttpPost]
-    [Authorize]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EnableAuthenticator(TwoFactorAuthenticationViewModel twoFactorAuthenticationViewModel)
     {
@@ -266,13 +309,13 @@ public class AccountController(
     }
 
     [HttpGet]
-    [Authorize]
     public IActionResult AuthenticatorConfirmation()
     {
         return View();
     }
     
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> VerifyAuthenticatorCode(bool rememberMe, string returnUrl = null)
     {
         var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
@@ -289,6 +332,7 @@ public class AccountController(
     }
     
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> VerifyAuthenticatorCode(VerifyAuthenticatorViewModel verifyAuthenticatorViewModel)
     {
@@ -306,7 +350,6 @@ public class AccountController(
     }
     
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> RemoveAuthenticator()
     {
         var user = await userManager.GetUserAsync(User);

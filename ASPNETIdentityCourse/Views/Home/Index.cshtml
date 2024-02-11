@@ -1,4 +1,5 @@
-﻿@{
+﻿@using ASPNETIdentityCourse.Const
+@{
     ViewData["Title"] = "Home Page";
 }
 
@@ -15,9 +16,18 @@
         }
         else
         {
-            <a asp-controller="Account" asp-action="EnableAuthenticator">Set up two factor authentication</a><br/>
+            <a asp-controller="Account" asp-action="EnableAuthenticator">Set up two factor authentication</a>
+            <br/>
+        }
+
+        @if (User.IsInRole(Role.Administrator))
+        {
+            <h2 class="text-success"> User is administrator</h2>
+        }
+        else
+        {
+            <h2 class="text-success"> User is just normal user 😝</h2>
         }
     }
-
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>

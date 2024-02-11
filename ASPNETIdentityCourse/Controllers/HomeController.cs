@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ASPNETIdentityCourse.Const;
 using Microsoft.AspNetCore.Mvc;
 using ASPNETIdentityCourse.Models;
 using ASPNETIdentityCourse.Models.Entities;
@@ -11,11 +12,10 @@ public class HomeController(ILogger<HomeController> logger, UserManager<Applicat
     : Controller
 {
     private readonly ILogger<HomeController> _logger = logger;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
 
     public async Task<IActionResult> Index()
     {
-        var user = await _userManager.GetUserAsync(User);
+        var user = await userManager.GetUserAsync(User); 
 
         if (user is null)
         {
@@ -29,7 +29,7 @@ public class HomeController(ILogger<HomeController> logger, UserManager<Applicat
         return View();
     }
 
-    [Authorize]
+    [Authorize(Roles = Role.Administrator)]
     public IActionResult Privacy()
     {
         return View();

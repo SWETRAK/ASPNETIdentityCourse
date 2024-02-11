@@ -22,6 +22,11 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<AccountMappingProfile>();
 });
 
+builder.Services.ConfigureApplicationCookie(opt =>
+{
+    opt.AccessDeniedPath = new PathString("/Account/NoAccess");
+});
+
 // Password can be configured 
 builder.Services.Configure<IdentityOptions>(opt =>
 {
