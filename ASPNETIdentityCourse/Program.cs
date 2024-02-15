@@ -1,11 +1,10 @@
 using ASPNETIdentityCourse;
 using ASPNETIdentityCourse.Mappings;
-using ASPNETIdentityCourse.Models.Configuration;
 using ASPNETIdentityCourse.Models.Entities;
 // using ASPNETIdentityCourse.Services;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Unleash;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +40,22 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders(); // Needed for resetting password working  
 // builder.Services.AddScoped<IEmailSender, EmailSenderService>();
+
+// Configuration of unleash, feature flag management service connection
+builder.Services.AddSingleton<IUnleash>(s =>
+{
+    var unleashSettings = new UnleashSettings
+    {
+        AppName = "test-dotnet-app",
+        UnleashApi = new Uri("http://localhost:4242/api/"),
+        FetchTogglesInterval = TimeSpan.FromSeconds(10),
+        CustomHttpHeaders = new Dictionary<string, string>()
+        {
+            {"Authorization","default:development.aea907266d4b9efe9846b38a825f3fa64d85b8a74755b0f78acc90f1"}
+        }
+    };
+    return new DefaultUnleash(unleashSettings);
+});
 
 var app = builder.Build();
 

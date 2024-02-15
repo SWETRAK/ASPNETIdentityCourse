@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ASPNETIdentityCourse.Controllers;
 
-[Authorize]
 public class AccountController(
     UserManager<ApplicationUser> userManager,
     RoleManager<IdentityRole> roleManager,
@@ -227,7 +226,7 @@ public class AccountController(
     public async Task<IActionResult> LogOff()
     {
         await signInManager.SignOutAsync();
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction(nameof(Index), "Home");
     }
 
     [HttpGet]
@@ -307,7 +306,7 @@ public class AccountController(
         ModelState.AddModelError("Verify", "Your two factor authentication code is invalid.");
         return View(twoFactorAuthenticationViewModel);
     }
-
+    
     [HttpGet]
     public IActionResult AuthenticatorConfirmation()
     {

@@ -5,17 +5,23 @@ using ASPNETIdentityCourse.Models;
 using ASPNETIdentityCourse.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Unleash;
 
 namespace ASPNETIdentityCourse.Controllers;
 
-public class HomeController(ILogger<HomeController> logger, UserManager<ApplicationUser> userManager)
+public class HomeController(ILogger<HomeController> logger, UserManager<ApplicationUser> userManager, IUnleash unleash)
     : Controller
 {
     private readonly ILogger<HomeController> _logger = logger;
 
     public async Task<IActionResult> Index()
     {
-        var user = await userManager.GetUserAsync(User); 
+        var user = await userManager.GetUserAsync(User);
+
+        if (unleash.IsEnabled("kami-console-log"))
+        {
+            Console.Write("Console Log Feature");
+        }
 
         if (user is null)
         {
