@@ -12,8 +12,6 @@ namespace ASPNETIdentityCourse.Controllers;
 public class HomeController(ILogger<HomeController> logger, UserManager<ApplicationUser> userManager, IUnleash unleash)
     : Controller
 {
-    private readonly ILogger<HomeController> _logger = logger;
-
     public async Task<IActionResult> Index()
     {
         var user = await userManager.GetUserAsync(User);
